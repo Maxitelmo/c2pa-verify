@@ -17,6 +17,14 @@ c2pa-python, with hash-pinned trust lists and separate states for "valid" and
 - `AUSENTE` no descarta nada: la mayoría de los archivos no tiene manifiesto, y
   las plataformas de mensajería suelen quitarlo.
 
+## Cuándo usar otra herramienta
+
+[c2pareader](https://github.com/abrignoni/c2pareader) (MIT) lee lo que el archivo
+declara, en Python puro y sin dependencias, pero no verifica firmas. Este paquete
+hace el paso siguiente, verificar, a cambio de depender de c2pa-python y su
+biblioteca nativa. Son complementarios: uno sirve para leer rápido en cualquier
+lado, y el otro para saber si lo declarado tiene respaldo de firma.
+
 ## Instalación y uso
 
 ```bash
@@ -77,6 +85,8 @@ Registrá siempre `fecha_lectura_utc` junto con el resultado.
 - Se detecta una biblioteca nativa ajena en la carpeta de trabajo y no se la carga,
   pero no se verifica el hash de la biblioteca efectivamente cargada.
 - Las identidades CAWG no se decodifican ni se resuelven.
+- Instalado pesa bastante: el paquete `c2pa` de c2pa-python ocupa unos 300 MB en
+  Windows.
 - Las listas envejecen: actualizarlas requiere publicar una versión nueva (ver
   [trust/README.md](src/c2pa_verificador/trust/README.md)).
 
