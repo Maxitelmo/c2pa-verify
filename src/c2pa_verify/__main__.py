@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Línea de comandos: python -m c2pa_verificador [--json] ARCHIVO [ARCHIVO ...]
+"""Línea de comandos: python -m c2pa_verify [--json] ARCHIVO [ARCHIVO ...]
 
 Sale con 0 si todos los archivos se pudieron leer y con 1 si alguno no.
 """
@@ -32,7 +32,7 @@ def _texto(r: dict) -> str:
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(prog="c2pa-verificador",
+    parser = argparse.ArgumentParser(prog="c2pa-verify",
                                      description="Verifica manifiestos C2PA sin red y sin modificar los archivos.")
     parser.add_argument("archivos", nargs="+", metavar="ARCHIVO")
     parser.add_argument("--json", action="store_true", help="salida JSON con el resultado completo")

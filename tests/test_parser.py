@@ -3,7 +3,7 @@
 
 import pytest
 
-from c2pa_verificador import verificador as det
+from c2pa_verify import verificador as det
 
 
 _DST = "http://cv.iptc.org/newscodes/digitalsourcetype/"

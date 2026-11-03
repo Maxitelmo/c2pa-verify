@@ -7,10 +7,10 @@ import os
 
 import pytest
 
-from c2pa_verificador import verificador as det
-from c2pa_verificador import listas as conf
+from c2pa_verify import verificador as det
+from c2pa_verify import listas as conf
 
-RAIZ = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "c2pa_verificador")
+RAIZ = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "c2pa_verify")
 
 
 @pytest.mark.parametrize("nombre", [conf.FIRMANTES, conf.TSA])

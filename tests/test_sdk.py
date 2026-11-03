@@ -23,9 +23,9 @@ from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID  # noqa: E402
 from PIL import Image  # noqa: E402
 
 from _tsa_descartable import TsaDescartable  # noqa: E402
-from c2pa_verificador import __main__ as cli  # noqa: E402
-from c2pa_verificador import listas as conf  # noqa: E402
-from c2pa_verificador import verificador as det  # noqa: E402
+from c2pa_verify import __main__ as cli  # noqa: E402
+from c2pa_verify import listas as conf  # noqa: E402
+from c2pa_verify import verificador as det  # noqa: E402
 
 
 _DST = "http://cv.iptc.org/newscodes/digitalsourcetype/"
@@ -635,7 +635,7 @@ def test_cli_salida_utf8_con_consola_cp1252(tmp_path, monkeypatch):
     # El subproceso no hereda el pythonpath de pytest: sin instalar, no hallaría el paquete.
     entorno = dict(os.environ, PYTHONIOENCODING="cp1252",
                    PYTHONPATH=os.path.dirname(os.path.dirname(det.__file__)))
-    salida = subprocess.run([sys.executable, "-m", "c2pa_verificador", str(ruta)], env=entorno,
+    salida = subprocess.run([sys.executable, "-m", "c2pa_verify", str(ruta)], env=entorno,
                             capture_output=True)
     assert salida.returncode == 0, salida.stderr
     assert "\u6f22".encode("utf-8") in salida.stdout
