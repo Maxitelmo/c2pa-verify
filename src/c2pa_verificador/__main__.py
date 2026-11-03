@@ -39,6 +39,11 @@ def main(argv=None) -> int:
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args(argv)
 
+    # Redirigida en Windows, la salida usa cp1252: un firmante con otro alfabeto
+    # cortaría el programa con UnicodeEncodeError.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     resultados = [verificar(a) for a in args.archivos]
     if args.json:
         print(json.dumps(resultados, ensure_ascii=False, indent=2))
