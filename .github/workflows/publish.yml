@@ -1,0 +1,56 @@
+name: publicar en PyPI
+
+# Se dispara al publicar un release en GitHub. Usa Trusted Publishing: no hay
+# contraseñas ni tokens guardados en el repositorio.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e .[dev]
+      - run: python -m pytest -q
+
+  construir:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install build
+      - run: python -m build
+      - name: La etiqueta del release coincide con la versión del paquete
+        run: |
+          version=$(grep -oP '__version__ = "\K[^"]+' src/c2pa_verify/__init__.py)
+          test "${GITHUB_REF_NAME}" = "v${version}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

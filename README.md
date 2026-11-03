@@ -93,9 +93,9 @@ Registrá siempre `fecha_lectura_utc` junto con el resultado.
 - Instalado pesa bastante: el paquete `c2pa` de c2pa-python ocupa unos 300 MB en
   Windows.
 - Las listas envejecen: actualizarlas requiere publicar una versión nueva (ver
-  [trust/README.md](src/c2pa_verify/trust/README.md)).
+  [trust/README.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/trust/README.md)).
 
-Ver también [docs/HALLAZGOS-SDK.md](docs/HALLAZGOS-SDK.md).
+Ver también [docs/HALLAZGOS-SDK.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/docs/HALLAZGOS-SDK.md).
 
 ## Cómo verificar el método
 
@@ -103,8 +103,8 @@ El método está pensado para que cualquiera lo revise y lo reproduzca.
 
 1. **Leer las reglas:** los estados salen de `_estado_c2pa`, `_tipo_invalidez` y
    `_extraer_info_c2pa`, en
-   [verificador.py](src/c2pa_verify/verificador.py). La configuración del SDK está
-   en `settings_c2pa`, en [listas.py](src/c2pa_verify/listas.py).
+   [verificador.py](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/verificador.py). La configuración del SDK está
+   en `settings_c2pa`, en [listas.py](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/listas.py).
 2. **Correr los tests:**
 
    ```bash
@@ -128,7 +128,7 @@ El método está pensado para que cualquiera lo revise y lo reproduzca.
 3. **Cotejar las listas:** el SHA-256 de cada lista debe coincidir con el archivo
    original de [conformance-public](https://github.com/c2pa-org/conformance-public)
    en el commit indicado en
-   [trust/README.md](src/c2pa_verify/trust/README.md).
+   [trust/README.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/trust/README.md).
 4. **Contrastar resultados:** lo declarado se puede comparar con c2pareader o
    c2patool. El estado de la firma solo es comparable si la otra herramienta carga
    las mismas listas y acepta los mismos EKU.
@@ -143,5 +143,5 @@ un archivo de prueba propio.
 
 ## Licencia
 
-Apache-2.0 (ver [LICENSE](LICENSE) y [NOTICE](NOTICE)). Las listas de confianza son
+Apache-2.0 (ver [LICENSE](https://github.com/Maxitelmo/c2pa-verify/blob/main/LICENSE) y [NOTICE](https://github.com/Maxitelmo/c2pa-verify/blob/main/NOTICE)). Las listas de confianza son
 de C2PA Conformance, bajo CC BY 4.0.

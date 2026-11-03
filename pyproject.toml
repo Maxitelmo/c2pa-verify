@@ -14,6 +14,10 @@ dynamic = ["version"]
 # Fijada: claves de configuración, trustListUri y códigos están verificados contra esta versión.
 dependencies = ["c2pa-python==0.38.0"]
 
+[project.urls]
+Repositorio = "https://github.com/Maxitelmo/c2pa-verify"
+Problemas = "https://github.com/Maxitelmo/c2pa-verify/issues"
+
 [project.optional-dependencies]
 dev = ["pytest", "cryptography", "pillow"]
 
