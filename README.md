@@ -1,12 +1,15 @@
-# c2pa-verificador
+# c2pa-verify
 
 Verificación **offline y determinista** de manifiestos C2PA, pensada para trabajo
 forense. Informa el estado de la firma y lo que el manifiesto declara, con la
 trazabilidad necesaria para reproducir el resultado.
 
-*English summary: offline, deterministic C2PA manifest verification on top of
-c2pa-python, with hash-pinned trust lists and separate states for "valid" and
-"trusted". The API and output are in Spanish.*
+> **Idioma:** por ahora, la herramienta y su documentación están solo en español.
+>
+> **Language:** for now, this tool and its documentation are available in Spanish
+> only, including the API, the output and the state names. It does offline,
+> deterministic C2PA manifest verification on top of c2pa-python, with hash-pinned
+> trust lists and separate states for "valid" and "trusted".
 
 ## Qué no hace
 
@@ -27,20 +30,22 @@ lado, y el otro para saber si lo declarado tiene respaldo de firma.
 
 ## Instalación y uso
 
+Requiere Python 3.10 o posterior.
+
 ```bash
-pip install .
+pip install git+https://github.com/Maxitelmo/c2pa-verify.git
 ```
 
 ```bash
-c2pa-verificador foto.jpg video.mp4
+c2pa-verify foto.jpg video.mp4
 ```
 
 ```bash
-c2pa-verificador --json foto.jpg
+c2pa-verify --json foto.jpg
 ```
 
 ```python
-from c2pa_verificador import verificar
+from c2pa_verify import verificar
 
 r = verificar("foto.jpg")
 print(r["estado"], r["etiqueta"], r["firmante"])
@@ -88,22 +93,53 @@ Registrá siempre `fecha_lectura_utc` junto con el resultado.
 - Instalado pesa bastante: el paquete `c2pa` de c2pa-python ocupa unos 300 MB en
   Windows.
 - Las listas envejecen: actualizarlas requiere publicar una versión nueva (ver
-  [trust/README.md](src/c2pa_verificador/trust/README.md)).
+  [trust/README.md](src/c2pa_verify/trust/README.md)).
 
 Ver también [docs/HALLAZGOS-SDK.md](docs/HALLAZGOS-SDK.md).
 
-## Desarrollo
+## Cómo verificar el método
 
-```bash
-pip install -e .[dev]
-```
+El método está pensado para que cualquiera lo revise y lo reproduzca.
 
-```bash
-python -m pytest
-```
+1. **Leer las reglas:** los estados salen de `_estado_c2pa`, `_tipo_invalidez` y
+   `_extraer_info_c2pa`, en
+   [verificador.py](src/c2pa_verify/verificador.py). La configuración del SDK está
+   en `settings_c2pa`, en [listas.py](src/c2pa_verify/listas.py).
+2. **Correr los tests:**
 
-Los tests firman sus propios archivos con una CA y una TSA descartables. El
-repositorio no contiene imágenes reales ni evidencia.
+   ```bash
+   git clone https://github.com/Maxitelmo/c2pa-verify.git
+   ```
+
+   ```bash
+   cd c2pa-verify
+   ```
+
+   ```bash
+   pip install -e .[dev]
+   ```
+
+   ```bash
+   python -m pytest
+   ```
+
+   Firman sus propios archivos con una CA y una TSA descartables, contra el SDK
+   real, y cubren cada estado.
+3. **Cotejar las listas:** el SHA-256 de cada lista debe coincidir con el archivo
+   original de [conformance-public](https://github.com/c2pa-org/conformance-public)
+   en el commit indicado en
+   [trust/README.md](src/c2pa_verify/trust/README.md).
+4. **Contrastar resultados:** lo declarado se puede comparar con c2pareader o
+   c2patool. El estado de la firma solo es comparable si la otra herramienta carga
+   las mismas listas y acepta los mismos EKU.
+
+**Límite de la validación:** el repositorio no incluye imágenes reales. También se
+midió sobre un banco propio de 54 archivos que no se publica porque incluye material
+de terceros, así que esa medición no se puede reproducir desde acá. Los tests sí.
+
+Si encontrás un resultado incorrecto, abrí un issue. **No subas evidencia ni archivos
+de una causa:** alcanza con los códigos de `--json`, sin datos que identifiquen, o con
+un archivo de prueba propio.
 
 ## Licencia
 
