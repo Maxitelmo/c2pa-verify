@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+# Nunca evidencia ni bancos de prueba reales: los tests firman sus propios archivos.
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.mp4
+*.mov

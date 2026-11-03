@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "c2pa-verificador"
+description = "Verificación offline y determinista de manifiestos C2PA, con listas de confianza fijadas por hash."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "src/c2pa_verificador/trust/LICENSE-C2PA-TRUST-LIST.txt"]
+authors = [{ name = "Maximiliano Telmo" }]
+dynamic = ["version"]
+# Fijada: claves de configuración, trustListUri y códigos están verificados contra esta versión.
+dependencies = ["c2pa-python==0.38.0"]
+
+[project.optional-dependencies]
+dev = ["pytest", "cryptography", "pillow"]
+
+[project.scripts]
+c2pa-verificador = "c2pa_verificador.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "c2pa_verificador.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+c2pa_verificador = ["trust/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
