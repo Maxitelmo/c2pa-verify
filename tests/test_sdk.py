@@ -632,7 +632,9 @@ def test_cli_texto_y_archivo_faltante(tmp_path, pki, capsys):
 def test_cli_salida_utf8_con_consola_cp1252(tmp_path, monkeypatch):
     # Redirigida en Windows, la salida usa cp1252: un nombre con otro alfabeto la cortaba.
     ruta = _archivo(tmp_path, _jpeg(), "\u6f22.jpg")
-    entorno = dict(os.environ, PYTHONIOENCODING="cp1252")
+    # El subproceso no hereda el pythonpath de pytest: sin instalar, no hallaría el paquete.
+    entorno = dict(os.environ, PYTHONIOENCODING="cp1252",
+                   PYTHONPATH=os.path.dirname(os.path.dirname(det.__file__)))
     salida = subprocess.run([sys.executable, "-m", "c2pa_verificador", str(ruta)], env=entorno,
                             capture_output=True)
     assert salida.returncode == 0, salida.stderr
