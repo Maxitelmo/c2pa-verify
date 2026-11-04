@@ -1,0 +1,43 @@
+name: listas de confianza
+
+# Una vez por semana compara las listas del paquete con las de C2PA Conformance
+# y abre un issue si cambiaron. No modifica nada: actualizar es una decisión humana.
+on:
+  schedule:
+    - cron: "17 11 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  comparar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Comparar y avisar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYTHONPATH: src
+        run: |
+          code=0
+          python tools/comparar_listas.py > informe.md || code=$?
+          cat informe.md
+          if [ "$code" -eq 0 ]; then
+            exit 0
+          elif [ "$code" -ne 10 ]; then
+            exit "$code"
+          fi
+          titulo="Listas de confianza C2PA: hay cambios en la fuente"
+          abiertos=$(gh issue list --state open --limit 100 --json title \
+            --jq "[.[] | select(.title == \"$titulo\")] | length")
+          if [ "$abiertos" -eq 0 ]; then
+            gh issue create --title "$titulo" --body-file informe.md
+          else
+            echo "Ya hay un issue abierto sobre esto."
+          fi
