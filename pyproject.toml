@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "c2pa-verify"
-description = "Verificación offline y determinista de manifiestos C2PA, con listas de confianza fijadas por hash."
+description = "Offline, deterministic C2PA manifest verification with hash-pinned trust lists."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"

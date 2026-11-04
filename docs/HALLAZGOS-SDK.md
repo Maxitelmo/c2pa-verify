@@ -1,5 +1,7 @@
 # Comportamiento medido del SDK
 
+> **[English version](SDK-FINDINGS.md)**
+
 Verificado contra c2pa-python 0.38.0 (c2pa-rs 0.91.0). Al subir de versión hay que
 volver a comprobarlo: `tests/test_sdk.py` corre contra el SDK real.
 

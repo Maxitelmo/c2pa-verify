@@ -1,114 +1,124 @@
 # c2pa-verify
 
-Verificación **offline y determinista** de manifiestos C2PA, pensada para trabajo
-forense. Informa el estado de la firma y lo que el manifiesto declara, con la
-trazabilidad necesaria para reproducir el resultado.
+**Offline, deterministic** verification of C2PA manifests, built for forensic work.
+It reports the state of the signature and what the manifest declares, with the
+traceability needed to reproduce the result.
 
-> **Idioma:** por ahora, la herramienta y su documentación están solo en español.
->
-> **Language:** for now, this tool and its documentation are available in Spanish
-> only, including the API, the output and the state names. It does offline,
-> deterministic C2PA manifest verification on top of c2pa-python, with hash-pinned
-> trust lists and separate states for "valid" and "trusted".
+> **[Versión en español](https://github.com/Maxitelmo/c2pa-verify/blob/main/README.es.md)**
 
-## Qué no hace
+## What it does not do
 
-- No dice si el contenido es verdadero. Una firma confiable indica quién firmó y
-  que el archivo no cambió desde entonces.
-- No detecta IA. Informa lo que el manifiesto **declara**; no analiza píxeles ni
-  puntúa.
-- `AUSENTE` no descarta nada: la mayoría de los archivos no tiene manifiesto, y
-  las plataformas de mensajería suelen quitarlo.
+- It does not say whether the content is true. A trusted signature tells you who
+  signed and that the file has not changed since.
+- It does not detect AI. It reports what the manifest **declares**; it does not
+  analyze pixels and does not score anything.
+- `ABSENT` rules nothing out: most files have no manifest, and messaging platforms
+  usually remove it.
 
-## Cuándo usar otra herramienta
+## When to use another tool
 
-[c2pareader](https://github.com/abrignoni/c2pareader) (MIT) lee lo que el archivo
-declara, en Python puro y sin dependencias, pero no verifica firmas. Este paquete
-hace el paso siguiente, verificar, a cambio de depender de c2pa-python y su
-biblioteca nativa. Son complementarios: uno sirve para leer rápido en cualquier
-lado, y el otro para saber si lo declarado tiene respaldo de firma.
+[c2pareader](https://github.com/abrignoni/c2pareader) (MIT) reads what a file
+declares, in pure Python with no dependencies, but it does not verify signatures.
+This package takes the next step, verification, at the cost of depending on
+c2pa-python and its native library. They are complementary: one reads quickly
+anywhere, the other tells you whether what is declared is backed by a signature.
 
-## Instalación y uso
+## Install and use
 
-Requiere Python 3.10 o posterior.
+Requires Python 3.10 or later.
 
 ```bash
 pip install c2pa-verify
 ```
 
 ```bash
-c2pa-verify foto.jpg video.mp4
+c2pa-verify --lang en photo.jpg video.mp4
 ```
 
 ```bash
-c2pa-verify --json foto.jpg
+c2pa-verify --lang en --json photo.jpg
 ```
 
 ```python
-from c2pa_verify import verificar
+from c2pa_verify import verify
 
-r = verificar("foto.jpg")
-print(r["estado"], r["etiqueta"], r["firmante"])
+r = verify("photo.jpg")
+print(r["state"], r["label"], r["signer"])
 ```
 
-## Estados
+**The default language of the command is Spanish**, so pass `--lang en`. The language
+is always chosen explicitly and never taken from the machine's settings: the same
+file gives the same output on any computer. In Python, `verify()` returns English and
+`verificar()` returns Spanish. Both run the same verification. Code comments are in
+Spanish for now.
 
-| Estado | Significado |
+## States
+
+| State | Meaning |
 |---|---|
-| `CONFIABLE` | Manifiesto íntegro y firmante validado contra la lista de firmantes C2PA |
-| `VALIDO_NO_CONFIABLE` | Manifiesto íntegro; el firmante no está en la lista cargada |
-| `INVALIDO` + `invalidez: "credencial"` | Contenido íntegro, pero el certificado no es apto, venció o fue revocado |
-| `INVALIDO` + `invalidez: "integridad"` | El contenido no coincide con el firmado, o la firma no verifica |
-| `MALFORMADO` | Hay un manifiesto, pero no se puede leer |
-| `REMOTO` | El archivo remite a un manifiesto en internet, que **no se descarga** (hacerlo le avisaría a quien controla esa dirección) |
-| `AUSENTE` | No hay manifiesto |
-| `None` | No se pudo determinar; ver `motivo`. No significa que no haya manifiesto |
+| `TRUSTED` | Manifest intact, and signer validated against the C2PA signers list |
+| `VALID_UNTRUSTED` | Manifest intact, but the signer is not on the loaded trust list |
+| `INVALID` + `invalidity: "credential"` | Content intact, but the certificate is unsuitable, expired or revoked |
+| `INVALID` + `invalidity: "integrity"` | The content does not match what was signed, or the signature does not verify |
+| `MALFORMED` | There is a manifest, but it cannot be read |
+| `REMOTE` | The file points to a manifest on the internet, which is **not downloaded** (doing so would alert whoever controls that address) |
+| `ABSENT` | There is no manifest |
+| `None` | Could not be determined; see `reason`. It does not mean there is no manifest |
 
-## Garantías
+**`VALID_UNTRUSTED` does not mean the signature is fake.** The signature verifies and
+the content is the one signed. It only means the signer is not on the list loaded in
+this version, so its identity is not vouched for by that list.
 
-- **Sin red:** sin OCSP, sin manifiestos remotos y con la lista de hosts vacía. Los
-  tests lo comprueban con una escucha local y un control positivo.
-- **Sin escrituras:** el archivo solo se lee.
-- **Listas fijadas:** una lista cuyo SHA-256 no coincide con el fijado no se carga,
-  y entonces nadie sale confiable.
-- **Confianza atribuible:** `CONFIABLE` exige que el SDK haya validado contra la
-  lista de firmantes, no contra la de sellos de tiempo.
-- **Trazable:** cada resultado registra SHA-256 del archivo, fecha de lectura,
-  versiones, hash de las listas y EKU aceptados.
+SDK validation codes such as `assertion.dataHash.mismatch` are C2PA standard names
+and are not translated.
 
-## El resultado depende de la fecha
+## Guarantees
 
-Una firma sin sello de tiempo de una TSA anclada se valida con la fecha de lectura:
-cuando el certificado vence, el mismo archivo pasa a `INVALIDO` por credencial.
-Registrá siempre `fecha_lectura_utc` junto con el resultado.
+- **No network:** no OCSP, no remote manifests, and an empty list of allowed hosts.
+  The tests check this with a local listener and a positive control.
+- **No writes:** the file is only read.
+- **Pinned lists:** a list whose SHA-256 does not match the pinned one is not loaded,
+  and then nobody comes out as trusted.
+- **Attributable trust:** `TRUSTED` requires that the SDK validated against the
+  signers list, not the time-stamp list.
+- **Traceable:** each result records the file's SHA-256, the read date, versions, the
+  hash of the lists and the accepted EKUs.
 
-## Limitaciones conocidas
+## The result depends on the date
 
-- El SDK corre dentro del proceso: un archivo que haga fallar la biblioteca nativa
-  puede cerrar el programa. Para lotes no confiables, conviene aislarlo en un
-  proceso hijo.
-- Se detecta una biblioteca nativa ajena en la carpeta de trabajo y no se la carga,
-  pero no se verifica el hash de la biblioteca efectivamente cargada.
-- Las identidades CAWG no se decodifican ni se resuelven.
-- Instalado pesa bastante: el paquete `c2pa` de c2pa-python ocupa unos 300 MB en
+A signature without a time-stamp from an anchored TSA is validated against the read
+date: once the certificate expires, the same file becomes `INVALID` by credential.
+Always record `read_at_utc` with the result.
+
+## Known limitations
+
+- The SDK runs inside the process: a file that makes the native library fail can
+  close the program. For untrusted batches, isolate it in a child process.
+- A foreign native library in the working directory is detected and not loaded, but
+  the hash of the library actually loaded is not verified.
+- CAWG identities are neither decoded nor resolved.
+- The install is heavy: the `c2pa` package from c2pa-python takes about 300 MB on
   Windows.
-- Las listas envejecen: quien instala queda con las de su versión hasta actualizar.
-  Una tarea semanal abre un issue en este repositorio cuando la fuente cambia, pero
-  actualizarlas requiere revisar y publicar una versión nueva (ver
-  [trust/README.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/trust/README.md)).
-  Para saber con qué listas se verificó, ver `listas_confianza` en el resultado.
+- Lists age: an installation keeps the lists of its version until updated. A weekly
+  job opens an issue in this repository when the source changes, but updating them
+  takes a review and a new release (see
+  [trust/README.en.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/trust/README.en.md)).
+  To see which lists were used, check `trust_lists` in the result.
 
-Ver también [docs/HALLAZGOS-SDK.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/docs/HALLAZGOS-SDK.md).
+See also [docs/SDK-FINDINGS.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/docs/SDK-FINDINGS.md).
 
-## Cómo verificar el método
+## How to verify the method
 
-El método está pensado para que cualquiera lo revise y lo reproduzca.
+The method is meant to be reviewed and reproduced by anyone.
 
-1. **Leer las reglas:** los estados salen de `_estado_c2pa`, `_tipo_invalidez` y
-   `_extraer_info_c2pa`, en
-   [verificador.py](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/verificador.py). La configuración del SDK está
-   en `settings_c2pa`, en [listas.py](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/listas.py).
-2. **Correr los tests:**
+1. **Read the rules:** states come from `_estado_c2pa`, `_tipo_invalidez` and
+   `_extraer_info_c2pa`, in
+   [verificador.py](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/verificador.py).
+   The SDK configuration is in `settings_c2pa`, in
+   [listas.py](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/listas.py).
+   The English output is produced from that same result in
+   [english.py](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/english.py).
+2. **Run the tests:**
 
    ```bash
    git clone https://github.com/Maxitelmo/c2pa-verify.git
@@ -126,25 +136,26 @@ El método está pensado para que cualquiera lo revise y lo reproduzca.
    python -m pytest
    ```
 
-   Firman sus propios archivos con una CA y una TSA descartables, contra el SDK
-   real, y cubren cada estado.
-3. **Cotejar las listas:** el SHA-256 de cada lista debe coincidir con el archivo
-   original de [conformance-public](https://github.com/c2pa-org/conformance-public)
-   en el commit indicado en
-   [trust/README.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/trust/README.md).
-4. **Contrastar resultados:** lo declarado se puede comparar con c2pareader o
-   c2patool. El estado de la firma solo es comparable si la otra herramienta carga
-   las mismas listas y acepta los mismos EKU.
+   They sign their own files with a throwaway CA and TSA, against the real SDK, and
+   cover each state.
+3. **Check the lists:** the SHA-256 of each list must match the original file in
+   [conformance-public](https://github.com/c2pa-org/conformance-public) at the commit
+   given in
+   [trust/README.en.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/trust/README.en.md).
+4. **Compare results:** what is declared can be compared with c2pareader or c2patool.
+   The signature state is only comparable if the other tool loads the same lists and
+   accepts the same EKUs.
 
-**Límite de la validación:** el repositorio no incluye imágenes reales. También se
-midió sobre un banco propio de 54 archivos que no se publica porque incluye material
-de terceros, así que esa medición no se puede reproducir desde acá. Los tests sí.
+**Limit of the validation:** the repository contains no real images. It was also
+measured on a private set of 54 files, not published because it includes third-party
+material, so that measurement cannot be reproduced from here. The tests can.
 
-Si encontrás un resultado incorrecto, abrí un issue. **No subas evidencia ni archivos
-de una causa:** alcanza con los códigos de `--json`, sin datos que identifiquen, o con
-un archivo de prueba propio.
+If you find a wrong result, please open an issue. **Do not upload evidence or files
+from a case:** the codes from `--json` are enough, without identifying data, or a test
+file of your own.
 
-## Licencia
+## License
 
-Apache-2.0 (ver [LICENSE](https://github.com/Maxitelmo/c2pa-verify/blob/main/LICENSE) y [NOTICE](https://github.com/Maxitelmo/c2pa-verify/blob/main/NOTICE)). Las listas de confianza son
-de C2PA Conformance, bajo CC BY 4.0.
+Apache-2.0 (see [LICENSE](https://github.com/Maxitelmo/c2pa-verify/blob/main/LICENSE)
+and [NOTICE](https://github.com/Maxitelmo/c2pa-verify/blob/main/NOTICE)). The trust
+lists are from C2PA Conformance, under CC BY 4.0.

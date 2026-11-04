@@ -1,5 +1,7 @@
 # trust/: listas de confianza C2PA
 
+> **[English version](README.en.md)**
+
 Anclas X.509 con las que el verificador distingue un manifiesto **válido** (íntegro, firmante desconocido) de uno
 **confiable** (íntegro y con el firmante en la lista de confianza C2PA).
 Sin estas listas el SDK nunca puede devolver "Trusted" (C2PA 2.2 §14.4).
@@ -10,7 +12,7 @@ Son solo certificados públicos, sin claves privadas.
 
 El verificador **no descarga nada al leer**: ni estas listas, ni OCSP, ni manifiestos
 remotos. Las listas se actualizan publicando una versión nueva (ver abajo).
-Una lista cuyo SHA-256 no coincide con el fijado en `c2pa_confianza.py` no se
+Una lista cuyo SHA-256 no coincide con el fijado en `listas.py` no se
 carga, y entonces ningún firmante se informa como confiable.
 
 ## Fuente
@@ -38,7 +40,7 @@ listas vigentes del programa de conformidad.
    oficial (no de `main` sin fijar) y verificar el SHA-1 de blob contra el árbol
    de ese commit.
 2. Reemplazar los archivos acá (el `.gitattributes` del repo los mantiene en LF).
-3. Actualizar `SHA256_FIJADO` en `listas.py` y esta tabla.
+3. Actualizar `SHA256_FIJADO` en `listas.py` y la tabla de los dos README.
 4. Correr la suite (`tests/test_listas.py` coteja archivo y hash fijado).
 
 ## Comportamiento verificado del SDK (c2pa-python 0.38.0, c2pa-rs 0.91.0)
