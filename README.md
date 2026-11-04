@@ -33,7 +33,7 @@ lado, y el otro para saber si lo declarado tiene respaldo de firma.
 Requiere Python 3.10 o posterior.
 
 ```bash
-pip install git+https://github.com/Maxitelmo/c2pa-verify.git
+pip install c2pa-verify
 ```
 
 ```bash
@@ -92,8 +92,11 @@ Registrá siempre `fecha_lectura_utc` junto con el resultado.
 - Las identidades CAWG no se decodifican ni se resuelven.
 - Instalado pesa bastante: el paquete `c2pa` de c2pa-python ocupa unos 300 MB en
   Windows.
-- Las listas envejecen: actualizarlas requiere publicar una versión nueva (ver
+- Las listas envejecen: quien instala queda con las de su versión hasta actualizar.
+  Una tarea semanal abre un issue en este repositorio cuando la fuente cambia, pero
+  actualizarlas requiere revisar y publicar una versión nueva (ver
   [trust/README.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/src/c2pa_verify/trust/README.md)).
+  Para saber con qué listas se verificó, ver `listas_confianza` en el resultado.
 
 Ver también [docs/HALLAZGOS-SDK.md](https://github.com/Maxitelmo/c2pa-verify/blob/main/docs/HALLAZGOS-SDK.md).
 
