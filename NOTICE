@@ -5,7 +5,7 @@ Licenciado bajo Apache License 2.0 (ver LICENSE).
 
 Incluye las listas de confianza de C2PA Conformance
 (https://github.com/c2pa-org/conformance-public, carpeta trust-list/,
-commit d6dec63476e2636095d1291d24b29ffa2d4e1ac0), bajo Creative Commons
+commit a95f2c4e4be7cd015c394fc5deb188683cbbc944), bajo Creative Commons
 Attribution 4.0 International, sin cambios. Texto en
 src/c2pa_verify/trust/LICENSE-C2PA-TRUST-LIST.txt.
 

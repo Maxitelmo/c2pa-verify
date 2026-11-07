@@ -17,17 +17,17 @@ is reported as trusted.
 
 - Official repository: https://github.com/c2pa-org/conformance-public
   (`trust-list/` folder), maintained by C2PA Conformance.
-- Commit: `d6dec63476e2636095d1291d24b29ffa2d4e1ac0` (2026-10-26, "Automated Sync:
+- Commit: `a95f2c4e4be7cd015c394fc5deb188683cbbc944` (2026-11-04, "Automated Sync:
   Update trust lists").
 - Integrity when downloaded: the git blob SHA-1 of each file matches the commit's tree
-  (checked on 2026-11-03).
+  (checked on 2026-11-07).
 - License: **Creative Commons Attribution 4.0 International (CC BY 4.0)**, text in
   `LICENSE-C2PA-TRUST-LIST.txt`. Redistributed unchanged.
 
 | File | Content | Certificates | SHA-256 |
 |---|---|---|---|
-| `C2PA-TRUST-LIST.pem` | Anchors of manifest signers | 32 | `b3949271a07b007e92ef1d18050b55388f5e0d2686a16fd864176c48421af8ae` |
-| `C2PA-TSA-TRUST-LIST.pem` | Anchors of time-stamp authorities (RFC 3161) | 23 | `7182cb227c02701be0eebd67ab635fca7f85431c32796fb53b267c657cd2c675` |
+| `C2PA-TRUST-LIST.pem` | Anchors of manifest signers | 33 | `148c1c167e98dc909a0d5793d2feee1022aa60fef5c83a0d6b08f67f4446bc37` |
+| `C2PA-TSA-TRUST-LIST.pem` | Anchors of time-stamp authorities (RFC 3161) | 24 | `eca8347ee71e31d226e00c85b15aca356116fefe6c26ed8c0ee1f954115b1990` |
 
 The C2PA *Interim Trust List* was frozen on 2026-01-01; these are the current lists of
 the conformance program.
@@ -52,7 +52,7 @@ the conformance program.
   from an anchored TSA (`timeStamp.trusted`); otherwise at read time, and a signature with
   a valid time-stamp expires just like one without.
 - That is why the TSA list goes into the SDK **without the certificates it shares with
-  the signers list**. In this version: 7 of its 23 certificates, and the result states it
+  the signers list**. In this version: 7 of its 24 certificates, and the result states it
   in `trust_lists`. Without the signers list, the TSA list is not loaded.
 - An unknown configuration key is ignored with no error: building the configuration has
   tests against the real SDK.

@@ -43,11 +43,11 @@ C2PA_PYTHON_VERIFICADA = "0.38.0"
 FIRMANTES = "C2PA-TRUST-LIST.pem"
 TSA = "C2PA-TSA-TRUST-LIST.pem"
 
-# SHA-256 fijados (commit d6dec63 de c2pa-org/conformance-public, 26-10-2026).
+# SHA-256 fijados (commit a95f2c4 de c2pa-org/conformance-public, 04-11-2026).
 # Para actualizar: reemplazar el PEM, este digest y trust/README.md.
 SHA256_FIJADO = {
-    FIRMANTES: "b3949271a07b007e92ef1d18050b55388f5e0d2686a16fd864176c48421af8ae",
-    TSA:       "7182cb227c02701be0eebd67ab635fca7f85431c32796fb53b267c657cd2c675",
+    FIRMANTES: "148c1c167e98dc909a0d5793d2feee1022aa60fef5c83a0d6b08f67f4446bc37",
+    TSA:       "eca8347ee71e31d226e00c85b15aca356116fefe6c26ed8c0ee1f954115b1990",
 }
 
 _KIND = {FIRMANTES: "manifest", TSA: "tsa"}
