@@ -639,3 +639,181 @@ def test_cli_salida_utf8_con_consola_cp1252(tmp_path, monkeypatch):
                             capture_output=True)
     assert salida.returncode == 0, salida.stderr
     assert "\u6f22".encode("utf-8") in salida.stdout
+
+
+# \u2500\u2500 API p\u00fablica (0.3.0) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+_CLAVES_VERIFICAR = [
+    "archivo", "sha256", "fecha_lectura_utc", "version", "c2pa_python", "sdk_disponible",
+    "estado", "etiqueta", "invalidez", "hallazgos", "codigos", "firmante", "generador",
+    "digital_source_type", "tipo", "ingredientes_ia", "asistente_ia", "validation_state",
+    "trust_list_uri", "confianza_no_atribuible", "url_remota", "listas_confianza",
+    "eku_aceptados", "motivo",
+]
+_HASH_NO_COINCIDE = ("el contenido del archivo no coincide con el que se firm\u00f3 (cambi\u00f3 despu\u00e9s "
+                     "de la firma, o el manifiesto corresponde a otro contenido)")
+
+
+def _esperado(ruta, datos, **cambios):
+    """Resultado completo de verificar() en 0.2.0 para `ruta`, sin la fecha."""
+    r = dict.fromkeys(_CLAVES_VERIFICAR)
+    del r["fecha_lectura_utc"]
+    r.update(archivo=str(ruta), sha256=hashlib.sha256(datos).hexdigest() if datos else None,
+             version=det.__version__, c2pa_python=det.version_c2pa_python(),
+             sdk_disponible=True, hallazgos=[], ingredientes_ia=[],
+             listas_confianza=conf.resumen_listas(conf.cargar_listas()),
+             eku_aceptados=list(conf.EKU_ACEPTADOS))
+    r.update(cambios)
+    return r
+
+
+def test_salida_de_verificar_igual_a_la_de_0_2_0(tmp_path, pki):
+    """La API p\u00fablica no toca verificar(): sobre los archivos de prueba da, clave
+    por clave y en el mismo orden, lo mismo que la 0.2.0 (salvo "version")."""
+    firmado = _firmar(pki)
+    alterado = bytearray(firmado)
+    alterado[-10] ^= 0xFF
+    alterado = bytes(alterado)
+    url = "https://manifiestos.example.test/m.c2pa"
+    declarado = dict(firmante="C2PA Prueba", generador="GeneradorIA-Prueba",
+                     digital_source_type=_DST + "trainedAlgorithmicMedia", tipo="generacion")
+    exitos = ["claimSignature.insideValidity", "claimSignature.validated",
+              "assertion.hashedURI.match", "assertion.hashedURI.match",
+              "assertion.hashedURI.match"]
+    casos = [
+        ("firmado.jpg", firmado, dict(
+            declarado, estado="VALIDO_NO_CONFIABLE", validation_state="Valid",
+            etiqueta="v\u00e1lida, firmante fuera de la lista de confianza cargada (manifiesto \u00edntegro)",
+            codigos={"success": exitos + ["assertion.dataHash.match"],
+                     "informational": ["signingCredential.ocsp.skipped"],
+                     "failure": ["signingCredential.untrusted"]})),
+        ("alterado.jpg", alterado, dict(
+            declarado, estado="INVALIDO", invalidez="integridad", validation_state="Invalid",
+            etiqueta="inv\u00e1lida (el contenido no coincide con el que se firm\u00f3, o la firma no verifica)",
+            hallazgos=["C2PA assertion.dataHash.mismatch: " + _HASH_NO_COINCIDE],
+            codigos={"success": exitos,
+                     "informational": ["signingCredential.ocsp.skipped"],
+                     "failure": ["signingCredential.untrusted", "assertion.dataHash.mismatch"]})),
+        ("sin.jpg", _jpeg(), dict(estado="AUSENTE")),
+        ("remoto.jpg", _firmar(pki, url_remota=url), dict(
+            estado="REMOTO", url_remota=url,
+            etiqueta="no verificada (manifiesto en una direcci\u00f3n remota que no se descarga)")),
+        ("a.bmp", _bmp(b"\x00jumd\x00c2pa\x00"), dict(
+            motivo="formato que el SDK no lee", listas_confianza=None, eku_aceptados=None)),
+    ]
+    for nombre, datos, cambios in casos:
+        ruta = _archivo(tmp_path, datos, nombre)
+        r = det.verificar(ruta)
+        assert list(r) == _CLAVES_VERIFICAR, nombre
+        assert r.pop("fecha_lectura_utc").endswith("+00:00")
+        assert r == _esperado(ruta, datos, **cambios), nombre
+
+    faltante = tmp_path / "no_existe.jpg"
+    r = det.verificar(faltante)
+    r.pop("fecha_lectura_utc")
+    assert r["motivo"].startswith("no se pudo leer el archivo: ")
+    assert r == _esperado(faltante, None, listas_confianza=None, eku_aceptados=None,
+                          motivo=r["motivo"])
+
+
+def test_leer_manifiesto_es_la_lectura_que_usa_verificar(tmp_path, pki):
+    import c2pa_verify
+    firmado = _firmar(pki)
+    alterado = bytearray(firmado)
+    alterado[-10] ^= 0xFF
+    casos = {"firmado.jpg": firmado, "alterado.jpg": bytes(alterado), "sin.jpg": _jpeg(),
+             "ingrediente.jpg": _firmar_edicion_con_ingrediente(pki, firmado),
+             "clip.mp4": _firmar_mp4(pki), "a.bmp": _bmp(),
+             "remoto.jpg": _firmar(pki, url_remota="https://manifiestos.example.test/m.c2pa")}
+    for nombre, datos in casos.items():
+        ruta = _archivo(tmp_path, datos, nombre)
+        crudo = det._verificar_c2pa(str(ruta))
+        assert det.leer_manifiesto(str(ruta)) == crudo, nombre
+        assert det.leer_manifiesto(ruta) == crudo, nombre   # acepta Path
+        assert c2pa_verify.leer_manifiesto(ruta) == crudo, nombre
+
+
+def test_leer_manifiesto_casos_del_contrato(tmp_path, pki, monkeypatch):
+    def _sin_trazabilidad(info):
+        assert info["listas_confianza"] == conf.resumen_listas(conf.cargar_listas())
+        assert info["eku_aceptados"] == list(conf.EKU_ACEPTADOS)
+        return {k: v for k, v in info.items() if k not in ("listas_confianza", "eku_aceptados")}
+
+    info = det.leer_manifiesto(_archivo(tmp_path, _firmar(pki), "firmado.jpg"))
+    assert info["presente"] is True and info["estado_c2pa"] == "VALIDO_NO_CONFIABLE"
+    assert info["firmante"] == "C2PA Prueba"
+    assert _sin_trazabilidad(det.leer_manifiesto(_archivo(tmp_path, _jpeg(), "sin.jpg"))) == {
+        "presente": False, "estado_c2pa": "AUSENTE"}
+    url = "https://manifiestos.example.test/m.c2pa"
+    assert _sin_trazabilidad(det.leer_manifiesto(
+        _archivo(tmp_path, _firmar(pki, url_remota=url), "remoto.jpg"))) == {
+        "presente": False, "estado_c2pa": "REMOTO", "url_remota": url}
+    # Sin sdk_no_lee() de por medio, el BMP llega al SDK, que lo rechaza.
+    assert _sin_trazabilidad(det.leer_manifiesto(_archivo(tmp_path, _bmp(), "a.bmp"))) == {
+        "presente": False, "no_soportado": True}
+    monkeypatch.setattr(det, "_leer_c2pa", lambda *a: {"presente": False, "error": "Other: roto"})
+    assert _sin_trazabilidad(det.leer_manifiesto(_archivo(tmp_path, _jpeg(), "roto.jpg"))) == {
+        "presente": False, "error": "Other: roto"}
+
+
+def test_leer_manifiesto_no_calcula_hash_ni_relee(tmp_path, pki, monkeypatch):
+    def _no(*a, **k):
+        raise AssertionError("leer_manifiesto no debe leer el archivo por su cuenta")
+    ruta = _archivo(tmp_path, _firmar(pki))
+    monkeypatch.setattr(det, "_inspeccionar", _no)
+    monkeypatch.setattr(det, "_sdk_no_lee", _no)
+    # Solo el hashlib del verificador: listas.py calcula el SHA-256 de las listas.
+    monkeypatch.setattr(det, "hashlib", type("SinHash", (), {"sha256": staticmethod(_no)}))
+    assert det.leer_manifiesto(ruta)["presente"] is True
+
+
+def test_leer_manifiesto_sin_sdk_es_none(tmp_path, monkeypatch):
+    monkeypatch.setattr(det, "_importar_c2pa", lambda: None)
+    assert det.leer_manifiesto(_archivo(tmp_path, _jpeg())) is None
+    assert det.sdk_disponible() is False
+
+
+def test_sdk_disponible_y_sin_motivo_con_sdk_cargado():
+    assert det.sdk_disponible() is True
+    assert det.motivo_sin_sdk() is None
+
+
+def test_motivo_sin_sdk_con_biblioteca_ajena(tmp_path, monkeypatch):
+    # Con c2pa ya importado no se busca la biblioteca: se simula un proceso nuevo.
+    monkeypatch.delitem(sys.modules, "c2pa")
+    monkeypatch.setattr(det, "_MOTIVO_SIN_C2PA", None)
+    nombre = det._NOMBRE_BIBLIOTECA_C2PA[sys.platform]
+    (tmp_path / "libs").mkdir()
+    (tmp_path / "libs" / nombre).write_bytes(b"no es una biblioteca")
+    monkeypatch.chdir(tmp_path)
+    assert det.motivo_sin_sdk() is None   # no intenta cargar el SDK
+    assert det.sdk_disponible() is False
+    motivo = det.motivo_sin_sdk()
+    assert motivo.startswith("biblioteca nativa ajena en la carpeta de trabajo (")
+    assert motivo.endswith(nombre + "): no se carg\u00f3")
+    r = det.verificar(_archivo(tmp_path, _jpeg()))
+    assert r["sdk_disponible"] is False and r["motivo"] == motivo
+    assert "c2pa" not in sys.modules
+
+
+def test_sdk_no_lee_decide_por_la_cabecera(pki):
+    assert det.sdk_no_lee(_bmp()) is True
+    assert det.sdk_no_lee(_bmp()[:2]) is True
+    assert det.sdk_no_lee(_jpeg()) is False
+    assert det.sdk_no_lee(_firmar(pki)) is False
+    assert det.sdk_no_lee(b"") is False
+    for datos in (_bmp(), _jpeg(), b""):
+        assert det.sdk_no_lee(datos) == det._sdk_no_lee(datos)
+
+
+def test_reiniciar_vuelve_a_cargar_las_listas(tmp_path, pki, listas_prueba):
+    ruta = _archivo(tmp_path, _firmar(pki))
+    listas_prueba(firmantes=_pki()[2], tsa=_pki()[2])
+    assert det.leer_manifiesto(ruta)["estado_c2pa"] == "VALIDO_NO_CONFIABLE"
+    assert det._CONTEXTO_C2PA is not None
+    listas_prueba(firmantes=pki[2], tsa=_pki()[2])
+    # Sin reiniciar, el Context cacheado sigue con las listas anteriores.
+    assert det.leer_manifiesto(ruta)["estado_c2pa"] == "VALIDO_NO_CONFIABLE"
+    det.reiniciar()
+    assert det._CONTEXTO_C2PA is None
+    assert det.leer_manifiesto(ruta)["estado_c2pa"] == "CONFIABLE"
