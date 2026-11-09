@@ -52,6 +52,50 @@ file gives the same output on any computer. In Python, `verify()` returns Englis
 `verificar()` returns Spanish. Both run the same verification. Code comments are in
 Spanish for now.
 
+## Building your own result
+
+For tools that build their own report on top of the same verification, version 0.3.0
+exposes the read that `verificar()` uses internally. These functions use the Spanish
+field names, with no English translation, and `verificar()` and `verify()` do not
+change.
+
+- `leer_manifiesto(path)`: the raw SDK read. It does not compute the file's SHA-256,
+  does not look for JUMBF boxes and does not call `sdk_no_lee()`: that is left to the
+  caller. It returns `None` if c2pa-python is not available, or a dict that is one of
+  these:
+  - `{"presente": False, "estado_c2pa": "AUSENTE"}`: there is no manifest.
+  - `{"presente": False, "error": ...}`: the SDK could not read the file or the
+    manifest. The caller decides whether it is `MALFORMADO`.
+  - `{"presente": False, "no_soportado": True}`: the SDK does not read the format.
+  - `{"presente": False, "estado_c2pa": "REMOTO", "url_remota": ...}`: the manifest is
+    at a remote address that is not downloaded.
+  - the dict from `extraer_info()`, with `presente: True` when there is an active
+    manifest.
+
+  Every dict also carries `listas_confianza` and `eku_aceptados`. This dict is a
+  stable contract.
+- `extraer_info(manifest_store, uri_firmantes=None)`: the pure parser of the manifest
+  JSON, with no I/O and no SDK. Useful for tests.
+- `sdk_disponible()`: whether c2pa-python can be loaded in this process.
+- `motivo_sin_sdk()`: why c2pa-python was not loaded (for example, a foreign native
+  library in the working directory), or `None`. It reflects the last
+  `sdk_disponible()`, `version_c2pa_python()` or `verificar()` and does not try to
+  load it.
+- `sdk_no_lee(header)`: whether the first bytes belong to a format the installed SDK
+  does not read. It is decided by the header, not by the extension.
+- `reiniciar()`: discards the cached SDK context, so the next read loads the trust
+  lists again.
+
+```python
+from c2pa_verify import leer_manifiesto, motivo_sin_sdk, sdk_disponible
+
+if not sdk_disponible():
+    print(motivo_sin_sdk() or "c2pa-python is not available")
+else:
+    info = leer_manifiesto("photo.jpg")
+    print(info.get("estado_c2pa"), info.get("firmante"))
+```
+
 ## States
 
 | State | Meaning |
