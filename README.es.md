@@ -51,6 +51,47 @@ elige siempre de forma explícita, nunca según la configuración de la máquina
 archivo da la misma salida en cualquier PC. En Python, `verify()` devuelve el resultado
 en inglés y `verificar()` en español, a partir de la misma verificación.
 
+## Armar un resultado propio
+
+Para herramientas que arman su propio informe sobre la misma verificación, la versión
+0.3.0 expone la lectura que `verificar()` usa por dentro. `verificar()` y `verify()` no
+cambian.
+
+- `leer_manifiesto(ruta)`: la lectura cruda del SDK. No calcula el SHA-256 del
+  archivo, no busca cajas JUMBF ni consulta `sdk_no_lee()`: eso queda a cargo de quien
+  llama. Devuelve `None` si c2pa-python no está disponible, o un dict que es uno de
+  estos:
+  - `{"presente": False, "estado_c2pa": "AUSENTE"}`: no hay manifiesto.
+  - `{"presente": False, "error": ...}`: el SDK no pudo leer el archivo o el
+    manifiesto. Quien llama decide si es `MALFORMADO`.
+  - `{"presente": False, "no_soportado": True}`: el SDK no lee el formato.
+  - `{"presente": False, "estado_c2pa": "REMOTO", "url_remota": ...}`: el manifiesto
+    está en una dirección remota que no se descarga.
+  - el dict de `extraer_info()`, con `presente: True` cuando hay manifiesto activo.
+
+  Todo dict lleva además `listas_confianza` y `eku_aceptados`. Este dict es un
+  contrato estable.
+- `extraer_info(manifest_store, uri_firmantes=None)`: el parser puro del JSON del
+  manifiesto, sin I/O ni SDK. Sirve para tests.
+- `sdk_disponible()`: si c2pa-python se puede cargar en este proceso.
+- `motivo_sin_sdk()`: por qué no se cargó c2pa-python (por ejemplo, una biblioteca
+  nativa ajena en la carpeta de trabajo), o `None`. Refleja lo ocurrido en el último
+  `sdk_disponible()`, `version_c2pa_python()` o `verificar()`, y no intenta cargarlo.
+- `sdk_no_lee(cabecera)`: si los primeros bytes son de un formato que el SDK instalado
+  no lee. Se decide por la cabecera, no por la extensión.
+- `reiniciar()`: descarta el contexto del SDK cacheado, así la próxima lectura vuelve a
+  cargar las listas de confianza.
+
+```python
+from c2pa_verify import leer_manifiesto, motivo_sin_sdk, sdk_disponible
+
+if not sdk_disponible():
+    print(motivo_sin_sdk() or "c2pa-python no está disponible")
+else:
+    info = leer_manifiesto("foto.jpg")
+    print(info.get("estado_c2pa"), info.get("firmante"))
+```
+
 ## Estados
 
 | Estado | Significado |
