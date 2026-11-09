@@ -613,6 +613,21 @@ def test_biblioteca_ajena_en_la_carpeta_de_trabajo_se_detecta(tmp_path, monkeypa
     assert det._biblioteca_c2pa_ajena().endswith(nombre)
 
 
+def test_revisa_la_carpeta_aunque_no_ubique_el_paquete(tmp_path, monkeypatch):
+    # Sin ubicar el paquete c2pa no hay carpeta propia que excluir, pero la
+    # revisión se hace igual: ante la duda, no se carga.
+    import importlib.util
+
+    def _falla(nombre):
+        raise ImportError(nombre)
+    (tmp_path / "libs").mkdir()
+    (tmp_path / "libs" / "c2pa_c.dll").write_bytes(b"MZ")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(importlib.util, "find_spec", _falla)
+    monkeypatch.setattr(det.sys, "platform", "win32")
+    assert det._biblioteca_c2pa_ajena() == os.path.join(str(tmp_path), "libs", "c2pa_c.dll")
+
+
 # ── Línea de comandos ────────────────────────────────────────────────────────
 
 def test_cli_json(tmp_path, pki, capsys):
