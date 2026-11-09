@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Offline verification of C2PA manifests. See english.verify() and verificador.verificar()."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 def verify(path):
