@@ -5,7 +5,10 @@ Informa el estado de la firma y lo que el manifiesto declara. No puntúa ni opin
 sobre si el contenido es verdadero: una firma confiable dice quién firmó y que el
 archivo no cambió desde entonces; la ausencia de manifiesto no dice nada.
 
-Punto de entrada: verificar(ruta). El resto es privado.
+Punto de entrada: verificar(ruta). Para quien arma su propio resultado sobre la
+misma verificación: leer_manifiesto(ruta) (la lectura cruda, sin hash criptográfico
+ni búsqueda de JUMBF), extraer_info(), sdk_disponible(), motivo_sin_sdk(),
+sdk_no_lee() y reiniciar(). Los nombres que empiezan con _ son privados.
 
 Verificado contra c2pa-python 0.38.0 (c2pa-rs 0.91.0); ver docs/HALLAZGOS-SDK.md.
 """
@@ -688,6 +691,72 @@ def _sdk_no_lee(datos: bytes) -> bool:
         except Exception:
             return False   # sin la lista, se le pregunta: NotSupported no rotula nada
     return mime not in _MIME_SDK
+
+
+# ── API pública de la lectura ────────────────────────────────────────────────
+# Envuelven a las funciones privadas que usa verificar(), sin cambiarlas: quien
+# arma su propio resultado obtiene lo mismo que verificar() usa por dentro.
+
+def leer_manifiesto(ruta):
+    """Lectura cruda del manifiesto con c2pa-python: lo que verificar() obtiene
+    del SDK antes de aplanarlo. Contrato estable desde 0.3.0.
+
+    El archivo lo lee solo el SDK: no se calcula el hash criptográfico, no se
+    buscan cajas JUMBF y no se consulta sdk_no_lee(). Eso queda a cargo del
+    llamador (verificar() lo hace antes de llamar a esta función).
+
+    Retorna None si c2pa-python no está disponible (ver motivo_sin_sdk()). Si
+    no, un dict que es uno de estos casos:
+      - {"presente": False, "estado_c2pa": "AUSENTE"}: el SDK leyó el archivo y
+        no hay manifiesto.
+      - {"presente": False, "error": str}: el SDK no pudo leer el archivo o el
+        manifiesto (error del SDK, o "JSON del manifiesto ilegible: ..."). El
+        llamador decide si es MALFORMADO (verificar() lo decide si hay JUMBF).
+      - {"presente": False, "no_soportado": True}: el SDK no lee el formato
+        (NotSupported); no dice nada del manifiesto.
+      - {"presente": False, "estado_c2pa": "REMOTO", "url_remota": str o None}:
+        el manifiesto está en una dirección remota que no se descarga.
+      - el dict de extraer_info(): "presente" es True si hay manifiesto activo;
+        False con estado_c2pa AUSENTE o MALFORMADO si el JSON no trae activo.
+    Todo dict lleva además "listas_confianza" (resumen_listas() de las listas
+    cargadas) y "eku_aceptados" (lista, o None si el SDK no recibió la
+    configuración).
+    """
+    return _verificar_c2pa(os.fspath(ruta))
+
+
+def extraer_info(manifest_store: dict, uri_firmantes=None) -> dict:
+    """Parser puro del JSON de un manifiesto (sin I/O ni SDK): el dict que
+    leer_manifiesto() retorna cuando el SDK entregó un JSON. `uri_firmantes`:
+    la de listas.uri_lista_firmantes(); si se pasa, CONFIABLE exige que el SDK
+    haya validado contra esa lista."""
+    return _extraer_info_c2pa(manifest_store, uri_firmantes)
+
+
+def sdk_disponible() -> bool:
+    """¿Se puede cargar c2pa-python en este proceso? Lo carga si hace falta."""
+    return _importar_c2pa() is not None
+
+
+def motivo_sin_sdk():
+    """Por qué c2pa-python no se cargó (p. ej. biblioteca nativa ajena en la
+    carpeta de trabajo), o None. Refleja lo ocurrido en el último
+    sdk_disponible(), version_c2pa_python() o verificar(): no intenta cargarlo.
+    None con el SDK no disponible significa que no está instalado o falló al
+    importarse."""
+    return _MOTIVO_SIN_C2PA
+
+
+def sdk_no_lee(cabecera: bytes) -> bool:
+    """¿Los primeros bytes son de un formato que el SDK instalado no lee? Se
+    decide por la cabecera, no por la extensión."""
+    return _sdk_no_lee(cabecera)
+
+
+def reiniciar():
+    """Descarta el Context de c2pa-python cacheado: la próxima lectura vuelve a
+    cargar las listas de confianza."""
+    _reiniciar_contexto_c2pa()
 
 
 def _inspeccionar(ruta: str):
